@@ -21,6 +21,18 @@ function Settings() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
 
+  // Real Browser Notification preferences
+  const [browserNotifEnabled, setBrowserNotifEnabled] = useState(
+    () => localStorage.getItem("tf_browser_notifications") === "true"
+  );
+  const [permissionStatus, setPermissionStatus] = useState(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      return Notification.permission; // 'granted' | 'denied' | 'default'
+    }
+    return "unsupported";
+  });
+  const [notifMessage, setNotifMessage] = useState("");
+
   // Fetch latest profile info and login history on mount
   useEffect(() => {
     const fetchLatestProfile = async () => {
@@ -50,6 +62,49 @@ function Settings() {
     fetchHistory();
   }, []);
 
+  const handleToggleBrowserNotifications = async () => {
+    setNotifMessage("");
+
+    if (!("Notification" in window)) {
+      setNotifMessage("Desktop notifications are not supported by your browser.");
+      return;
+    }
+
+    // If currently enabled, disable it
+    if (browserNotifEnabled) {
+      localStorage.setItem("tf_browser_notifications", "false");
+      setBrowserNotifEnabled(false);
+      setNotifMessage("Browser desktop notifications have been turned off.");
+      return;
+    }
+
+    // Attempt to request permission if not already granted
+    if (Notification.permission === "default") {
+      try {
+        const result = await Notification.requestPermission();
+        setPermissionStatus(result);
+        if (result === "granted") {
+          localStorage.setItem("tf_browser_notifications", "true");
+          setBrowserNotifEnabled(true);
+          setNotifMessage("Browser notifications enabled successfully!");
+          new Notification("TaskFlow Reminders", {
+            body: "You will receive desktop alerts for due and overdue tasks while TaskFlow is open.",
+          });
+        } else if (result === "denied") {
+          setNotifMessage("Notification permission was denied. You can enable them in your browser site settings.");
+        }
+      } catch {
+        setNotifMessage("Could not request notification permission.");
+      }
+    } else if (Notification.permission === "granted") {
+      localStorage.setItem("tf_browser_notifications", "true");
+      setBrowserNotifEnabled(true);
+      setNotifMessage("Browser desktop notifications are now active.");
+    } else if (Notification.permission === "denied") {
+      setNotifMessage("Notifications are blocked in your browser. Please allow notifications for this site in your browser address bar.");
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -66,7 +121,7 @@ function Settings() {
           <div>
             <p className="dashboard-label">PREFERENCES & ACCOUNT</p>
             <h1>Settings</h1>
-            <p>Manage your application preferences and account actions.</p>
+            <p>Manage your application preferences, notifications, and account actions.</p>
           </div>
 
           <Link to="/dashboard" className="dashboard-add-button">
@@ -80,7 +135,7 @@ function Settings() {
             <p className="dashboard-label">ACCOUNT OVERVIEW</p>
             <h2>Account</h2>
             <p>
-              Your account details. To update your name, email, photo, or password, visit your{" "}
+              Your account details and security credentials. To update your name, email, photo, or password, visit your{" "}
               <Link to="/profile" style={{ color: "var(--accent-color)" }}>
                 Profile
               </Link>
@@ -107,6 +162,20 @@ function Settings() {
                 <span>Email address</span>
                 <strong>{user?.email || "No email available"}</strong>
               </div>
+
+              <div>
+                <span>Account Role</span>
+                <strong style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  {user?.role === "admin" ? "🛡️ Administrator" : "Standard User"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Authentication Method</span>
+                <strong>
+                  {user?.authProvider === "google" ? "Google Account" : "Email & Password"}
+                </strong>
+              </div>
             </div>
 
             <Link to="/profile" className="settings-edit-trigger">
@@ -120,7 +189,7 @@ function Settings() {
           <div className="settings-section-header">
             <p className="dashboard-label">PREFERENCES</p>
             <h2>Application Preferences</h2>
-            <p>Customize how TaskFlow looks and behaves.</p>
+            <p>Customize how TaskFlow looks, alerts you, and behaves.</p>
           </div>
 
           {/* THEME CONTROL */}
@@ -179,14 +248,31 @@ function Settings() {
             </button>
           </div>
 
-          {/* TASK REMINDERS */}
+          {/* REAL TASK REMINDERS & BROWSER NOTIFICATIONS */}
           <div className="settings-option">
             <div>
-              <strong>Task reminders</strong>
-              <p>Reminder settings will be available in a future update.</p>
+              <strong>Browser Desktop Reminders</strong>
+              <p>
+                Receive operating system notifications for due and overdue tasks while TaskFlow is active in your browser.
+                {" "}
+                <span style={{ fontSize: "12px", color: "var(--secondary-text)" }}>
+                  (Permission: <strong>{permissionStatus}</strong>)
+                </span>
+              </p>
+              {notifMessage && (
+                <p style={{ fontSize: "13px", color: "var(--accent-color)", marginTop: "4px" }}>
+                  {notifMessage}
+                </p>
+              )}
             </div>
 
-            <span className="settings-badge">Coming soon</span>
+            <button
+              type="button"
+              className={`settings-edit-trigger ${browserNotifEnabled ? "active-setting" : ""}`}
+              onClick={handleToggleBrowserNotifications}
+            >
+              {browserNotifEnabled ? "Enabled ✓" : "Enable Reminders"}
+            </button>
           </div>
         </section>
 
@@ -194,9 +280,9 @@ function Settings() {
         <section className="settings-section">
           <div className="settings-section-header">
             <p className="dashboard-label">SECURITY & AUDIT</p>
-            <h2>Email Login History</h2>
+            <h2>Login History</h2>
             <p>
-              Review recent successful logins to your account. Records preserve the original email used at the time of each login.
+              Review recent successful logins to your account, including provider and timestamp.
             </p>
           </div>
 
@@ -218,60 +304,74 @@ function Settings() {
                 <thead>
                   <tr>
                     <th>Email Used</th>
-                    <th>Date &amp; Time</th>
-                    <th>Status</th>
+                    <th>Method</th>
+                    <th>Date & Time</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loginHistory.map((item, index) => (
-                    <tr key={item._id || index}>
-                      <td>
-                        <strong>{item.email}</strong>
-                      </td>
-                      <td>
-                        {new Date(item.loginAt).toLocaleString(undefined, {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td>
-                        <span className="history-badge">Successful</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {loginHistory.map((item, index) => {
+                    const parsedDate = new Date(item.loginAt);
+                    const formatted = !isNaN(parsedDate.getTime())
+                      ? parsedDate.toLocaleString("en-US", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })
+                      : "Unknown time";
+
+                    return (
+                      <tr key={index}>
+                        <td>{item.email}</td>
+                        <td>
+                          <span className="meta-badge" style={{ fontSize: "11px" }}>
+                            {item.provider === "google" ? "Google OAuth" : "Password"}
+                          </span>
+                        </td>
+                        <td>{formatted}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </section>
 
-        {/* ACCOUNT ACTIONS */}
+        {/* LOGOUT */}
         <section className="settings-section">
           <div className="settings-section-header">
-            <p className="dashboard-label">ACCOUNT ACTIONS</p>
-            <h2>Session Management</h2>
-            <p>Manage your active session or sign out of your account.</p>
+            <p className="dashboard-label">SESSION</p>
+            <h2>Log Out</h2>
+            <p>End your current session. You will need to sign in again to access your tasks.</p>
           </div>
 
           <div className="settings-option">
             <div>
-              <strong>Log out</strong>
-              <p>Sign out of your active session on this browser.</p>
+              <strong>Sign out of TaskFlow</strong>
+              <p>Clears stored session tokens from this device.</p>
             </div>
 
             <button
               type="button"
-              className="task-cancel-button"
+              className="logout-button"
               onClick={handleLogout}
-              style={{
-                color: "var(--danger-color)",
-                borderColor: "var(--border-color)",
-              }}
+              aria-label="Logout of TaskFlow"
             >
-              Log Out
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Logout</span>
             </button>
           </div>
         </section>

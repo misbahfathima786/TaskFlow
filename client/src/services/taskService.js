@@ -1,15 +1,13 @@
-const API_URL = "http://localhost:5000/api/tasks";
+import { API_BASE_URL, getAuthToken, getAuthHeaders } from "./apiConfig";
 
-const getToken = () => {
-  return localStorage.getItem("token");
-};
+const API_URL = `${API_BASE_URL}/tasks`;
 
 // GET ALL TASKS
 export const getTasks = async () => {
   const response = await fetch(API_URL, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
   });
 
@@ -27,7 +25,7 @@ export const getCompletedTasks = async () => {
   const response = await fetch(`${API_URL}/completed`, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
   });
 
@@ -44,10 +42,7 @@ export const getCompletedTasks = async () => {
 export const createTask = async (taskData) => {
   const response = await fetch(API_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(taskData),
   });
 
@@ -64,10 +59,7 @@ export const createTask = async (taskData) => {
 export const updateTask = async (taskId, taskData) => {
   const response = await fetch(`${API_URL}/${taskId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(taskData),
   });
 
@@ -85,7 +77,7 @@ export const deleteTask = async (taskId) => {
   const response = await fetch(`${API_URL}/${taskId}`, {
     method: "DELETE",
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
   });
 
@@ -103,7 +95,7 @@ export const getAnalytics = async () => {
   const response = await fetch(`${API_URL}/analytics`, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
   });
 

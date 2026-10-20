@@ -6,9 +6,18 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-logo">
+      <Link to="/" className="navbar-logo" aria-label="TaskFlow Home">
         <span className="navbar-brand-mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
         </span>
@@ -17,7 +26,8 @@ function Navbar() {
 
       <div className="navbar-links">
         <a href="/#features">Features</a>
-        <a href="/#about">About</a>
+        <a href="/#interactive-demo">Demo</a>
+        <a href="/#how-it-works">How It Works</a>
 
         {/* THEME TOGGLE */}
         <button
@@ -31,7 +41,16 @@ function Navbar() {
           }
         >
           {theme === "dark" ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
               <line x1="21" y1="12" x2="23" y2="12"></line>
@@ -43,18 +62,27 @@ function Navbar() {
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
           ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
           )}
           <span>{theme === "dark" ? "Light" : "Dark"}</span>
         </button>
 
-        <Link to="/auth" className="login-button">
-          Login
+        <Link to="/login" className="login-button">
+          Sign In
         </Link>
 
-        <Link to="/auth" className="signup-button">
+        <Link to="/register" className="signup-button">
           Get Started
         </Link>
       </div>

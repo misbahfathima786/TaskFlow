@@ -18,12 +18,42 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return this.authProvider === "local" && !this.googleId;
+      },
     },
 
     avatar: {
       type: String,
       default: "",
+    },
+
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+
+    googleId: {
+      type: String,
+      default: null,
+      sparse: true,
+    },
+
+    isDeactivated: {
+      type: Boolean,
+      default: false,
+    },
+
+    lastActivityAt: {
+      type: Date,
+      default: Date.now,
     },
 
     loginHistory: [
@@ -33,6 +63,10 @@ const userSchema = new mongoose.Schema(
           required: true,
           lowercase: true,
           trim: true,
+        },
+        provider: {
+          type: String,
+          default: "local",
         },
         loginAt: {
           type: Date,
